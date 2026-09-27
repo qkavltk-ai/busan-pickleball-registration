@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>부산광역시피클볼협회장배 참가신청</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#f4f7fb;font-family:system-ui,-apple-system,"Noto Sans KR",sans-serif;color:#172033}
+header{background:#075aa8;color:#fff;padding:30px 18px;text-align:center}header h1{font-size:24px;margin:0 0 7px}header p{margin:0;opacity:.9}
+main{max-width:720px;margin:20px auto;padding:0 14px}.card{background:#fff;border-radius:16px;padding:22px;box-shadow:0 5px 22px #00000012;margin-bottom:16px}
+h2{font-size:19px;margin:0 0 16px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+label{display:block;font-weight:700;font-size:14px;margin:10px 0 6px}input,select{width:100%;padding:13px;border:1px solid #ccd5e0;border-radius:10px;font-size:16px;background:#fff}
+button{width:100%;border:0;border-radius:12px;padding:15px;background:#075aa8;color:#fff;font-weight:800;font-size:17px;margin-top:18px}
+button:disabled{background:#98a7b8}.note{font-size:13px;color:#647184;line-height:1.6}.status{padding:12px;border-radius:10px;background:#eef6ff;margin-top:12px;font-weight:700}
+.ok{background:#eaf8ef;color:#176c36}.err{background:#fff0f0;color:#a62929}
+@media(max-width:560px){.grid{grid-template-columns:1fr}header h1{font-size:21px}}
+</style></head>
+<body>
+<header><h1>부산광역시피클볼협회장배 피클볼 대회</h1><p>참가 신청 · 각 부문 선착순 16팀</p></header>
+<main>
+<div class="card">
+<h2>대회 참가 신청</h2>
+<form id="f">
+<div class="grid">
+<div><label>급수</label><select name="division" required><option value="">선택</option><option>1부</option><option>2부</option><option>3부</option><option>4부</option><option>5부</option></select></div>
+<div><label>종목</label><select name="event" required><option value="">선택</option><option value="남자복식">남자복식</option><option value="여자복식">여자복식</option><option value="혼합복식">혼합복식</option></select></div>
+</div>
+<div class="grid">
+<div><label>선수 1 이름</label><input name="p1_name" required maxlength="30"></div>
+<div><label>선수 1 휴대전화</label><input name="p1_phone" required inputmode="tel" placeholder="010-1234-5678"></div>
+<div><label>선수 2 이름</label><input name="p2_name" required maxlength="30"></div>
+<div><label>선수 2 휴대전화</label><input name="p2_phone" required inputmode="tel" placeholder="010-1234-5678"></div>
+</div>
+<p class="note">남자복식 또는 여자복식과 혼합복식의 중복 출전은 가능합니다. 동일 급수·동일 종목에 같은 선수가 중복 신청하는 것은 제한됩니다.</p>
+<div id="status" class="status">급수와 종목을 선택하면 잔여 팀 수를 확인합니다.</div>
+<button id="submit" type="submit">참가 신청하기</button>
+</form></div>
+<div class="card note"><b>접수 기준</b><br>각 급수별 남자복식·여자복식·혼합복식은 각각 16팀까지 접수됩니다. 신청 버튼을 누르는 시점에 서버에서 정원과 중복 여부를 다시 확인합니다.</div>
+</main>
+<script>
+const f=document.querySelector('#f'), st=document.querySelector('#status'), btn=document.querySelector('#submit');
+async function quota(){
+ const d=f.division.value,e=f.event.value;if(!d||!e)return;
+ try{let r=await fetch(`/.netlify/functions/status?division=${encodeURIComponent(d)}&event=${encodeURIComponent(e)}`);let x=await r.json();
+ st.textContent=x.remaining>0?`현재 ${x.count}/16팀 접수 · 잔여 ${x.remaining}팀`:'접수가 마감되었습니다.';
+ btn.disabled=x.remaining<=0;
+ }catch{st.textContent='접수 현황을 불러오지 못했습니다.'}
+}
+f.division.onchange=quota;f.event.onchange=quota;
+f.onsubmit=async ev=>{
+ ev.preventDefault();btn.disabled=true;st.className='status';st.textContent='신청 처리 중...';
+ const body=Object.fromEntries(new FormData(f).entries());
+ try{
+  let r=await fetch('/.netlify/functions/register',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)});
+  let x=await r.json();
+  if(!r.ok) throw new Error(x.error||'신청에 실패했습니다.');
+  st.className='status ok';st.textContent=`접수 완료! 접수번호: ${x.id}`;
+  f.reset();
+ }catch(e){st.className='status err';st.textContent=e.message;btn.disabled=false}
+};
+</script></body></html>
